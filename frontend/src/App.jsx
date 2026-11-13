@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Documentation from "./pages/Documentation";
-import "./styles/global.css";
 
 function App() {
   return (
