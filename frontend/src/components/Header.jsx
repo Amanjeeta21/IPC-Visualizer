@@ -1,37 +1,45 @@
-
-import { Activity, BookOpen, GitBranch, RotateCcw } from "lucide-react";
-import { Link } from "react-router-dom";
+import { RotateCcw, Workflow, BookOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 function Header({ onReset, step = 0 }) {
-  const status =
-    step === 6 ? "RUN COMPLETED" : step > 0 ? "EXECUTION ACTIVE" : "READY TO EXECUTE";
+  const navigate = useNavigate();
 
   return (
     <header className="topbar">
       <div className="topbar-brand">
-        <div className="brand-mark">
-          <GitBranch size={20} />
+        <div className="brand-icon">
+          <Workflow size={20} />
         </div>
+
         <div className="brand-copy">
-          <strong>IPC / VISUALIZER</strong>
-          <span>OPERATING SYSTEMS LAB</span>
+          <strong>IPC VISUALIZER</strong>
         </div>
       </div>
 
       <div className="topbar-actions">
-        <div className={`live-indicator ${step === 6 ? "completed" : ""}`}>
-          <span />
-          {status}
-        </div>
+        <span className={`live-indicator ${step === 6 ? "completed" : ""}`}>
+          <span className="status-dot" />
+          {step === 6 ? "RUN COMPLETED" : "SIMULATION MODE"}
+        </span>
 
-        <Link className="documentation-link" to="/documentation">
-          <BookOpen size={15} />
-          Documentation
-        </Link>
+        <button
+          type="button"
+          className="header-reset-button"
+          onClick={() => navigate("/documentation")}
+          title="Open documentation"
+        >
+          <BookOpen size={14} />
+          <span>DOCUMENTATION</span>
+        </button>
 
-        <button className="reset-button" onClick={onReset}>
-          <RotateCcw size={15} />
-          Reset
+        <button
+          type="button"
+          className="header-reset-button"
+          onClick={onReset}
+          title="Reset the simulation"
+        >
+          <RotateCcw size={14} />
+          <span>RESET</span>
         </button>
       </div>
     </header>

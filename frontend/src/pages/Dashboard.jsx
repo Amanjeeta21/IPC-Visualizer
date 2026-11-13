@@ -1,6 +1,6 @@
 
 import { useEffect, useRef, useState } from "react";
-import { Activity, ArrowRight, Cpu, Database, GitBranch } from "lucide-react";
+import { ArrowRight, Database } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Header from "../components/Header";
@@ -8,7 +8,7 @@ import ProcessCard from "../components/ProcessCard";
 import ControlPanel from "../components/ControlPanel";
 import PipeChannel from "../components/PipeChannel";
 import ExecutionLog from "../components/ExecutionLog";
-import ProcessLifecycle from "../components/ProcessLifecycle";
+import StepIndicator from "../components/StepIndicator";
 
 import { runPipeIPC } from "../services/ipcService";
 
@@ -29,6 +29,7 @@ function Dashboard() {
 
   const [pipeCreated, setPipeCreated] = useState(false);
   const [childCreated, setChildCreated] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const [isRequesting, setIsRequesting] = useState(false);
   const [isPacketMoving, setIsPacketMoving] = useState(false);
@@ -84,8 +85,9 @@ function Dashboard() {
     ]);
   };
 
+  // STEP 1: CREATE PIPE
   const createPipe = () => {
-    if (pipeCreated && step !== 6) return;
+    if (isCreating || (pipeCreated && step !== 6)) return;
 
     const newCycle = cycleRef.current + 1;
     cycleRef.current = newCycle;
@@ -93,7 +95,10 @@ function Dashboard() {
     clearPendingTimers();
     requestLockRef.current = false;
 
+    setPipeCreated(false);
     setChildCreated(false);
+    setIsCreating(true);
+
     setIsRequesting(false);
     setIsPacketMoving(false);
     setIsReading(false);
@@ -102,34 +107,45 @@ function Dashboard() {
     setReceivedMessage("");
     setBackendResult(null);
 
-    setPipeCreated(true);
-    setStep(1);
-    setLogs(createInitialLogs("Initializing a new communication channel"));
+    setStep(0);
+    setLogs(createInitialLogs("Creating a new communication channel"));
 
     addLog("PIPE", "pipe() invoked by parent process");
+    addLog("PIPE", "Allocating read and write descriptors");
 
     schedule(() => {
       if (cycleRef.current !== newCycle) return;
 
+      setIsCreating(false);
+      setPipeCreated(true);
+      setStep(1);
+
       addLog("PIPE", "Read descriptor fd[0] initialized", "success");
       addLog("PIPE", "Write descriptor fd[1] initialized", "success");
-    }, 350);
+      addLog("PIPE", "Communication channel created successfully", "success");
+    }, 1100);
   };
 
+  // STEP 2: FORK CHILD PROCESS
   const forkChild = () => {
     if (!pipeCreated || childCreated || step !== 1) return;
 
-    setChildCreated(true);
-    setStep(2);
+    const currentCycle = cycleRef.current;
 
     addLog("FORK", "fork() invoked by parent process");
+    setStep(2);
 
     schedule(() => {
+      if (cycleRef.current !== currentCycle) return;
+
+      setChildCreated(true);
+
       addLog("FORK", "Child process created successfully", "success");
       addLog("FORK", "Child inherited pipe descriptors", "success");
-    }, 350);
+    }, 650);
   };
 
+  // STEP 3: WRITE DATA
   const writeToPipe = async () => {
     if (requestLockRef.current) return;
 
@@ -157,7 +173,8 @@ function Dashboard() {
     setIsPacketMoving(false);
     setStep(3);
 
-    addLog("WRITE", "Sending payload to the IPC simulation backend");
+    addLog("WRITE", "Parent process invokes write() on fd[1]");
+    addLog("WRITE", "Sending payload to the simulation backend");
 
     try {
       const result = await runPipeIPC(message);
@@ -170,20 +187,19 @@ function Dashboard() {
 
       setBackendResult(result);
       setIsRequesting(false);
+      setIsPacketMoving(true);
 
       addLog(
         "BACKEND",
-        `Simulation backend acknowledged child PID ${result.childPid}`,
+        `Simulation acknowledged child PID ${result.childPid}`,
         "success"
       );
 
       addLog(
         "WRITE",
-        `${result.bytesWritten} UTF-8 bytes written to the pipe`,
+        `${result.bytesWritten} UTF-8 bytes prepared for transfer`,
         "success"
       );
-
-      setIsPacketMoving(true);
 
       schedule(() => {
         if (cycleRef.current !== currentCycle) return;
@@ -197,6 +213,11 @@ function Dashboard() {
           "BUFFER",
           `Payload stored in pipe buffer (${result.bytesWritten} bytes)`,
           "success"
+        );
+
+        addLog(
+          "BUFFER",
+          "Pipe is occupied. Child can now invoke read()."
         );
       }, 1450);
     } catch (error) {
@@ -215,6 +236,7 @@ function Dashboard() {
     }
   };
 
+  // STEP 4: READ DATA
   const readFromPipe = () => {
     if (
       !childCreated ||
@@ -233,6 +255,7 @@ function Dashboard() {
     setStep(5);
 
     addLog("READ", "Child process invokes read() on fd[0]");
+    addLog("READ", "Reading data from the pipe buffer");
 
     schedule(() => {
       if (cycleRef.current !== currentCycle) return;
@@ -248,6 +271,7 @@ function Dashboard() {
         "success"
       );
 
+      addLog("BUFFER", "Pipe buffer is now empty", "success");
       addLog(
         "DONE",
         "Parent-child communication completed successfully",
@@ -256,6 +280,7 @@ function Dashboard() {
     }, 1200);
   };
 
+  // RESET SIMULATION
   const resetSimulation = () => {
     cycleRef.current += 1;
 
@@ -264,6 +289,7 @@ function Dashboard() {
 
     setPipeCreated(false);
     setChildCreated(false);
+    setIsCreating(false);
 
     setIsRequesting(false);
     setIsPacketMoving(false);
@@ -277,15 +303,17 @@ function Dashboard() {
     setLogs(createInitialLogs("Simulation reset. Ready for a new run."));
   };
 
-  const parentStatus = isRequesting
-    ? "Sending request..."
-    : isPacketMoving
-      ? "Transferring data..."
-      : bufferMessage || receivedMessage
-        ? "Payload sent"
-        : pipeCreated
-          ? "Ready"
-          : "Idle";
+  const parentStatus = isCreating
+    ? "Creating communication channel..."
+    : isRequesting
+      ? "Preparing data..."
+      : isPacketMoving
+        ? "Transferring data..."
+        : bufferMessage || receivedMessage
+          ? "Payload sent"
+          : pipeCreated
+            ? "Ready"
+            : "Idle";
 
   const childStatus = isReading
     ? "Reading from pipe..."
@@ -298,18 +326,15 @@ function Dashboard() {
           : "Not created";
 
   return (
-    <div className="app-shell">
+    <div className="app-shell dashboard-shell">
       <main className="main-content">
         <Header onReset={resetSimulation} step={step} />
 
         <section className="content">
           <div className="dashboard-heading">
-            <span className="heading-overline">
-              <Activity size={14} />
-              INTER-PROCESS COMMUNICATION / SIMULATION
-            </span>
-
-            <h1>Pipe IPC Simulator</h1>
+            <h1 className="main-dashboard-title">
+              PIPE IPC SIMULATOR
+            </h1>
 
             <p>
               Trace how data moves between parent and child processes through
@@ -328,47 +353,114 @@ function Dashboard() {
           </div>
 
           <div className="stats-card">
-            <div className="stat">
+            <div
+              className="stat"
+              aria-describedby="parent-stat-tooltip"
+              tabIndex={0}
+            >
               <span>PROCESS A / PARENT</span>
               <strong>PID {backendResult?.parentPid ?? 1024}</strong>
-              <small>{pipeCreated ? "Initialized" : "Waiting for execution"}</small>
+              <small>
+                {isCreating
+                  ? "Initializing..."
+                  : pipeCreated
+                    ? "Initialized"
+                    : "Waiting for execution"}
+              </small>
+              <span
+                className="stat-tooltip"
+                id="parent-stat-tooltip"
+                role="tooltip"
+              >
+                Initiates and manages communication.
+              </span>
             </div>
 
-            <div className="stat">
+            <div
+              className="stat"
+              aria-describedby="child-stat-tooltip"
+              tabIndex={0}
+            >
               <span>PROCESS B / CHILD</span>
               <strong>
-                {childCreated ? `PID ${backendResult?.childPid ?? 1025}` : "NOT CREATED"}
+                {childCreated
+                  ? `PID ${backendResult?.childPid ?? 1025}`
+                  : "NOT CREATED"}
               </strong>
-              <small>{childCreated ? "Fork completed" : "Waiting for fork()"}</small>
+              <small>
+                {childCreated ? "Fork completed" : "Waiting for fork()"}
+              </small>
+              <span
+                className="stat-tooltip"
+                id="child-stat-tooltip"
+                role="tooltip"
+              >
+                Receives data from parent.
+              </span>
             </div>
 
-            <div className="stat">
+            <div
+              className="stat"
+              aria-describedby="pipe-stat-tooltip"
+              tabIndex={0}
+            >
               <span>PIPE CHANNEL</span>
               <strong className={pipeCreated ? "green" : ""}>
-                {pipeCreated ? "ACTIVE" : "INACTIVE"}
+                {isCreating
+                  ? "CREATING"
+                  : pipeCreated
+                    ? "ACTIVE"
+                    : "INACTIVE"}
               </strong>
-              <small>{pipeCreated ? "fd[0] / fd[1]" : "No descriptors"}</small>
+              <small>
+                {pipeCreated ? "fd[0] / fd[1]" : "No descriptors"}
+              </small>
+              <span
+                className="stat-tooltip"
+                id="pipe-stat-tooltip"
+                role="tooltip"
+              >
+                Connects parent and child processes.
+              </span>
             </div>
 
-            <div className="stat">
+            <div
+              className="stat"
+              aria-describedby="payload-stat-tooltip"
+              tabIndex={0}
+            >
               <span>PAYLOAD SIZE</span>
-              <strong>{backendResult ? `${backendResult.bytesWritten} B` : `${byteCount} B`}</strong>
+              <strong>
+                {backendResult
+                  ? `${backendResult.bytesWritten} B`
+                  : `${byteCount} B`}
+              </strong>
               <small>UTF-8 encoded message</small>
+              <span
+                className="stat-tooltip"
+                id="payload-stat-tooltip"
+                role="tooltip"
+              >
+                Displays transmitted message size.
+              </span>
             </div>
           </div>
 
-          <ProcessLifecycle step={step} />
+          <StepIndicator step={step} />
 
           <section className="visualization-card">
             <div className="section-heading">
               <div>
-                <span className="section-kicker">LIVE PROCESS TOPOLOGY / 01</span>
                 <h2>Communication Flow</h2>
               </div>
 
               <span className={`pipe-state ${pipeCreated ? "active" : ""}`}>
                 <span className="state-dot" />
-                {pipeCreated ? "CHANNEL ACTIVE" : "CHANNEL INACTIVE"}
+                {isCreating
+                  ? "CREATING CHANNEL"
+                  : pipeCreated
+                    ? "CHANNEL ACTIVE"
+                    : "CHANNEL INACTIVE"}
               </span>
             </div>
 
@@ -377,16 +469,18 @@ function Dashboard() {
                 type="parent"
                 pid={backendResult?.parentPid ?? 1024}
                 status={parentStatus}
-                active={isWriting}
+                active={isWriting || isCreating}
                 created
               />
 
               <PipeChannel
+                isCreating={isCreating}
                 isWriting={isPacketMoving}
                 isReading={isReading}
                 message={bufferMessage || message}
                 bufferMessage={bufferMessage}
                 pipeCreated={pipeCreated}
+                childCreated={childCreated}
               />
 
               <ProcessCard
@@ -431,9 +525,9 @@ function Dashboard() {
               pipeCreated={pipeCreated}
               childCreated={childCreated}
               step={step}
+              isCreating={isCreating}
               isWriting={isWriting}
               isReading={isReading}
-              isRequesting={isRequesting}
               onCreatePipe={createPipe}
               onForkChild={forkChild}
               onWrite={writeToPipe}

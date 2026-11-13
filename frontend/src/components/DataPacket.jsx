@@ -1,33 +1,59 @@
 
-import { motion, AnimatePresence } from "framer-motion";
-import { Send } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Send } from "lucide-react";
 
-function DataPacket({ message, isActive, direction = "forward" }) {
-  const isReverse = direction === "reverse";
+function DataPacket({
+  message = "",
+  isActive = false,
+  direction = "forward",
+}) {
+  const isReading = direction === "reverse";
+
+  const startPosition = isReading ? "48%" : "3%";
+  const endPosition = isReading ? "97%" : "48%";
 
   return (
     <AnimatePresence>
       {isActive && (
         <motion.div
-          className={`data-packet ${isReverse ? "packet-reverse" : ""}`}
+          className={`data-packet ${
+            isReading ? "packet-reverse" : "packet-forward"
+          }`}
           initial={{
-            left: isReverse ? "50%" : "5%",
+            left: startPosition,
             opacity: 0,
-            scale: 0.7,
+            x: "-50%",
           }}
           animate={{
-            left: isReverse ? "95%" : "50%",
+            left: endPosition,
             opacity: 1,
-            scale: 1,
+            x: "-50%",
           }}
-          exit={{ opacity: 0, scale: 0.65 }}
+          exit={{
+            opacity: 0,
+            transition: { duration: 0.15 },
+          }}
           transition={{
-            duration: 1.25,
-            ease: [0.22, 1, 0.36, 1],
+            left: {
+              duration: isReading ? 1.1 : 1.35,
+              ease: [0.4, 0, 0.2, 1],
+            },
+            opacity: {
+              duration: 0.2,
+            },
           }}
         >
-          <Send size={12} />
-          <span>{message}</span>
+          <span className="data-packet-icon">
+            {isReading ? (
+              <ArrowRight size={12} />
+            ) : (
+              <Send size={12} />
+            )}
+          </span>
+
+          <span className="data-packet-label">
+            {message ? message : "DATA"}
+          </span>
         </motion.div>
       )}
     </AnimatePresence>

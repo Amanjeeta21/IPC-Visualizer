@@ -4,7 +4,7 @@
 :root {
   font-family: "Manrope", sans-serif;
   color: #172b4d;
-  background: #f3f5f8;
+  background: #f5f1e8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
@@ -12,8 +12,9 @@
   --navy-light: #263e62;
   --muted: #718096;
   --border: #dfe5ed;
-  --background: #f3f5f8;
-  --white: #ffffff;
+  --background: #f5f1e8;
+  --surface: #fbf8f1;
+  --white: #fbf8f1;
   --success: #47745b;
   --success-light: #eaf3ed;
   --danger: #b94a48;
@@ -57,6 +58,34 @@ a {
 .app-shell {
   min-height: 100vh;
   background: var(--background);
+}
+
+.dashboard-shell {
+  --dashboard-background: #f5f1e8;
+  --dashboard-surface: #fbf8f1;
+  background: var(--dashboard-background);
+}
+
+.dashboard-shell .topbar {
+  background: rgba(251, 248, 241, 0.94);
+}
+
+.dashboard-shell .documentation-link,
+.dashboard-shell .reset-button,
+.dashboard-shell .heading-tags span,
+.dashboard-shell .stat,
+.dashboard-shell .visualization-card,
+.dashboard-shell .lifecycle-card,
+.dashboard-shell .control-card,
+.dashboard-shell .log-card,
+.dashboard-shell .process-card:not(.process-active),
+.dashboard-shell .buffer-content:not(.buffer-content-active),
+.dashboard-shell .buffer-data-display,
+.dashboard-shell .pipe-info-card,
+.dashboard-shell .input-wrapper textarea,
+.dashboard-shell .secondary-button,
+.dashboard-shell .received-icon {
+  background: var(--dashboard-surface);
 }
 
 .main-content {
@@ -211,31 +240,54 @@ a {
 /* STATS */
 
 .stats-card {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
   margin: 0 0 22px;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
 }
 
 .stat {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-width: 0;
-  padding: 19px 22px;
-  border-right: 1px solid var(--border);
+  min-height: 110px;
+  padding: 18px 21px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
-.stat:last-child {
-  border-right: 0;
+.stat:hover,
+.stat:focus-visible {
+  z-index: 2;
+  transform: translateY(-5px);
+  border-color: #9aacc2;
+  box-shadow: 0 10px 24px rgba(23, 43, 77, 0.13);
 }
 
-.stat span {
+.stat:focus-visible {
+  outline: 2px solid #8298b5;
+  outline-offset: 2px;
+}
+
+.stat > span:not(.stat-tooltip) {
   display: block;
   color: #8290a3;
   font-family: var(--mono);
   font-size: 9px;
+  font-weight: 800;
   letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
 
 .stat strong {
@@ -256,6 +308,40 @@ a {
   margin-top: 5px;
   color: #98a4b3;
   font-size: 10px;
+  text-align: center;
+}
+
+.stat-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 10;
+  width: max-content;
+  max-width: min(220px, 100%);
+  padding: 8px 11px;
+  transform: translate(-50%, -4px);
+  color: #ffffff;
+  background: var(--navy);
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  overflow-wrap: break-word;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0.18s ease;
+}
+
+.stat:hover .stat-tooltip,
+.stat:focus-visible .stat-tooltip {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
 }
 
 /* VISUALIZATION */
@@ -283,12 +369,14 @@ a {
   letter-spacing: 1px;
 }
 
-.section-heading h2,
-.card-title h2 {
+.dashboard-shell .section-heading h2,
+.dashboard-shell .card-title h2 {
   margin: 6px 0 0;
   color: var(--navy);
   font-size: 17px;
+  font-weight: 800;
   letter-spacing: -0.3px;
+  text-transform: uppercase;
 }
 
 .pipe-state {
@@ -379,6 +467,29 @@ a {
   margin: 17px 0;
   color: var(--navy);
   font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.process-role,
+.pid span,
+.communication-label span,
+.lifecycle-count,
+.lifecycle-stage > strong {
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.control-mode,
+.live-log,
+.pipe-state {
+  font-weight: 800;
+}
+
+.dashboard-shell .lifecycle-card .section-heading h3,
+.dashboard-shell .pipe-info-card h4 {
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .pid {
@@ -1181,14 +1292,6 @@ textarea:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .stat:nth-child(2) {
-    border-right: 0;
-  }
-
-  .stat:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--border);
-  }
-
   .process-flow {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -1236,6 +1339,14 @@ textarea:disabled {
 }
 
 @media (max-width: 480px) {
+  .stats-card {
+    gap: 10px;
+  }
+
+  .stat {
+    padding: 15px 12px;
+  }
+
   .topbar-actions {
     width: 100%;
   }
@@ -1263,5 +1374,11 @@ textarea:disabled {
 
   .received-message {
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 420px) {
+  .stats-card {
+    grid-template-columns: 1fr;
   }
 }
