@@ -1,0 +1,310 @@
+
+/* =========================================
+   PROCESS LIFECYCLE
+========================================= */
+
+.lifecycle-card {
+  width: 100%;
+  min-width: 0;
+  margin: 20px 0;
+  padding: 24px 26px;
+  background: #ffffff;
+  border: 1px solid #dfe4eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(23, 43, 77, 0.05);
+  overflow: hidden;
+}
+
+.lifecycle-count {
+  flex-shrink: 0;
+  color: #718096;
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+}
+
+.lifecycle-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  margin-top: 22px;
+}
+
+.lifecycle-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: 180px;
+  padding: 14px 12px;
+  background: #fafbfc;
+  border: 1px solid #e3e8ef;
+  border-radius: 9px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.lifecycle-stage-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.lifecycle-stage-top > span {
+  color: #a0aaba;
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+}
+
+.lifecycle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 31px;
+  height: 31px;
+  border-radius: 7px;
+  color: #8b98aa;
+  background: #eef1f5;
+}
+
+.lifecycle-stage > strong {
+  color: #172b4d;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.lifecycle-stage > code {
+  margin-top: 7px;
+  padding: 4px 6px;
+  color: #526783;
+  background: #edf1f6;
+  border-radius: 4px;
+  font-family: "DM Mono", monospace;
+  font-size: 8px;
+  overflow-wrap: anywhere;
+}
+
+.lifecycle-stage > p {
+  flex: 1;
+  margin: 10px 0 14px;
+  color: #8793a4;
+  font-size: 9px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.lifecycle-status {
+  color: #a0aaba;
+  font-family: "DM Mono", monospace;
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.lifecycle-stage.completed {
+  background: #f4f8f5;
+  border-color: #cfe0d5;
+}
+
+.lifecycle-stage.completed .lifecycle-icon {
+  color: #47745b;
+  background: #e4efe7;
+}
+
+.lifecycle-stage.completed .lifecycle-status {
+  color: #47745b;
+}
+
+.lifecycle-stage.current {
+  background: #f1f4f8;
+  border-color: #8295b1;
+  box-shadow: 0 0 0 2px rgba(23, 43, 77, 0.06);
+}
+
+.lifecycle-stage.current .lifecycle-icon {
+  color: #172b4d;
+  background: #e2e8f0;
+}
+
+.lifecycle-stage.current .lifecycle-status {
+  color: #172b4d;
+}
+
+/* =========================================
+   EXECUTION LOG ENHANCEMENTS
+========================================= */
+
+.log-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 13px 0;
+  margin-top: 8px;
+  border-bottom: 1px solid #e9edf3;
+}
+
+.log-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #718096;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.log-summary-item svg {
+  color: #718096;
+}
+
+.log-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+}
+
+.log-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.log-operation {
+  color: #344968;
+  background: #edf2f8;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.log-status {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #64748b;
+}
+
+.log-status.success {
+  color: #278052;
+}
+
+.log-status.error {
+  color: #c24141;
+}
+
+.log-message {
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+/* Scoped to the log card so it does not affect other components. */
+.log-card .log-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.log-time {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #8995a7;
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+
+.log-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.log-icon.info {
+  color: #6583ad;
+}
+
+.log-icon.success {
+  color: #278052;
+}
+
+.log-icon.error {
+  color: #c24141;
+}
+
+.log-empty {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #8995a7;
+  text-align: center;
+}
+
+.log-empty strong {
+  color: #40516a;
+  font-size: 13px;
+}
+
+.log-empty span {
+  font-size: 11px;
+}
+
+.log-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 13px;
+  color: #8995a7;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.log-footer > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.log-footer .status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #299d69;
+}
+
+/* =========================================
+   RESPONSIVE LAYOUT
+========================================= */
+
+@media (max-width: 1250px) {
+  .lifecycle-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .lifecycle-card {
+    padding: 18px;
+  }
+
+  .lifecycle-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .lifecycle-stage {
+    min-height: 170px;
+  }
+}
