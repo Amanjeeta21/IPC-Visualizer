@@ -1,7 +1,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Activity,
   AlertCircle,
   CheckCircle2,
   CircleDot,
@@ -19,19 +18,19 @@ function ExecutionLog({ logs = [] }) {
     (log) => log.type === "error"
   ).length;
 
-  const latestLog = logs.length > 0 ? logs[logs.length - 1] : null;
+  const latestLog = logs.length ? logs[logs.length - 1] : null;
 
   return (
-    <div className="log-card">
+    <section className="log-card">
       <div className="card-title">
         <div>
-          <span className="section-kicker">SIMULATION MONITOR</span>
-          <h3>Execution Log</h3>
+          <span className="section-kicker">SYSTEM OUTPUT</span>
+          <h2>Execution Log</h2>
         </div>
 
         <span className="live-log">
-          <span></span>
-          LIVE PREVIEW
+          <span />
+          LIVE
         </span>
       </div>
 
@@ -54,7 +53,7 @@ function ExecutionLog({ logs = [] }) {
 
       <div className="log-container">
         <AnimatePresence initial={false}>
-          {logs.length > 0 ? (
+          {logs.length ? (
             logs.map((log, index) => (
               <motion.div
                 className={`log-entry ${log.type || "info"}`}
@@ -64,9 +63,7 @@ function ExecutionLog({ logs = [] }) {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
               >
-                <span className="log-time">
-                  {log.time || "--:--:--"}
-                </span>
+                <span className="log-time">{log.time || "--:--:--"}</span>
 
                 <span className={`log-icon ${log.type || "info"}`}>
                   {log.type === "success" ? (
@@ -85,29 +82,19 @@ function ExecutionLog({ logs = [] }) {
                     </span>
 
                     <span className={`log-status ${log.type || "info"}`}>
-                      {log.type === "success"
-                        ? "SUCCESS"
-                        : log.type === "error"
-                        ? "ERROR"
-                        : "INFO"}
+                      {(log.type || "info").toUpperCase()}
                     </span>
                   </div>
 
-                  <span className="log-message">
-                    {log.message}
-                  </span>
+                  <span className="log-message">{log.message}</span>
                 </div>
               </motion.div>
             ))
           ) : (
             <div className="log-empty">
-              <Terminal size={24} />
-
-              <strong>No execution events yet</strong>
-
-              <span>
-                Create a pipe to begin the communication sequence.
-              </span>
+              <Terminal size={25} />
+              <strong>No execution events</strong>
+              <span>Create a pipe to start the simulation.</span>
             </div>
           )}
         </AnimatePresence>
@@ -115,8 +102,8 @@ function ExecutionLog({ logs = [] }) {
 
       <div className="log-footer">
         <span>
-          <span className="status-dot"></span>
-          MONITORING SIMULATION
+          <span className="status-dot" />
+          SIMULATION MONITOR
         </span>
 
         <span>
@@ -124,8 +111,9 @@ function ExecutionLog({ logs = [] }) {
           {latestLog ? latestLog.time : "Waiting"}
         </span>
       </div>
-    </div>
+    </section>
   );
 }
 
 export default ExecutionLog;
+    

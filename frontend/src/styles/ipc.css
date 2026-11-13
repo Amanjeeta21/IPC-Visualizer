@@ -1,31 +1,28 @@
 
-/* =========================================
-   PROCESS LIFECYCLE
-========================================= */
+/* PROCESS LIFECYCLE */
 
 .lifecycle-card {
   width: 100%;
   min-width: 0;
-  margin: 20px 0;
-  padding: 24px 26px;
-  background: #ffffff;
-  border: 1px solid #dfe4eb;
+  margin: 22px 0;
+  padding: 25px;
+  background: #fff;
+  border: 1px solid #dce3ec;
   border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(23, 43, 77, 0.05);
+  box-shadow: 0 8px 28px rgba(23, 43, 77, 0.045);
   overflow: hidden;
 }
 
 .lifecycle-count {
   flex-shrink: 0;
-  color: #718096;
-  font-family: "DM Mono", monospace;
-  font-size: 10px;
+  color: #74849a;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 11px;
 }
 
 .lifecycle-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  align-items: stretch;
   gap: 12px;
   width: 100%;
   margin-top: 22px;
@@ -36,12 +33,13 @@
   flex-direction: column;
   align-items: flex-start;
   min-width: 0;
-  min-height: 180px;
-  padding: 14px 12px;
-  background: #fafbfc;
-  border: 1px solid #e3e8ef;
+  min-height: 175px;
+  padding: 15px 13px;
+  background: #f8fafc;
+  border: 1px solid #e1e7ef;
   border-radius: 9px;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease,
+    transform 0.2s ease;
 }
 
 .lifecycle-stage-top {
@@ -53,25 +51,25 @@
 }
 
 .lifecycle-stage-top > span {
-  color: #a0aaba;
-  font-family: "DM Mono", monospace;
-  font-size: 9px;
+  color: #9aa8ba;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 10px;
 }
 
 .lifecycle-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 31px;
-  height: 31px;
+  width: 32px;
+  height: 32px;
   border-radius: 7px;
-  color: #8b98aa;
-  background: #eef1f5;
+  color: #75859a;
+  background: #edf1f6;
 }
 
 .lifecycle-stage > strong {
   color: #172b4d;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -81,36 +79,36 @@
   color: #526783;
   background: #edf1f6;
   border-radius: 4px;
-  font-family: "DM Mono", monospace;
-  font-size: 8px;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 9px;
   overflow-wrap: anywhere;
 }
 
 .lifecycle-stage > p {
   flex: 1;
   margin: 10px 0 14px;
-  color: #8793a4;
-  font-size: 9px;
+  color: #7b899c;
+  font-size: 10px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
 
 .lifecycle-status {
-  color: #a0aaba;
-  font-family: "DM Mono", monospace;
-  font-size: 7px;
-  font-weight: 500;
+  color: #9aa8ba;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 8px;
+  font-weight: 600;
   letter-spacing: 0.5px;
 }
 
 .lifecycle-stage.completed {
-  background: #f4f8f5;
-  border-color: #cfe0d5;
+  background: #f1f7f3;
+  border-color: #c8ddcf;
 }
 
 .lifecycle-stage.completed .lifecycle-icon {
   color: #47745b;
-  background: #e4efe7;
+  background: #e1eee5;
 }
 
 .lifecycle-stage.completed .lifecycle-status {
@@ -118,29 +116,27 @@
 }
 
 .lifecycle-stage.current {
-  background: #f1f4f8;
-  border-color: #8295b1;
+  background: #edf2f8;
+  border-color: #8298b5;
   box-shadow: 0 0 0 2px rgba(23, 43, 77, 0.06);
 }
 
 .lifecycle-stage.current .lifecycle-icon {
   color: #172b4d;
-  background: #e2e8f0;
+  background: #dfe7f1;
 }
 
 .lifecycle-stage.current .lifecycle-status {
   color: #172b4d;
 }
 
-/* =========================================
-   EXECUTION LOG ENHANCEMENTS
-========================================= */
+/* EXECUTION LOG */
 
 .log-summary {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 13px;
   padding: 13px 0;
   margin-top: 8px;
   border-bottom: 1px solid #e9edf3;
@@ -153,11 +149,7 @@
   color: #718096;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.4px;
-}
-
-.log-summary-item svg {
-  color: #718096;
+  letter-spacing: 0.3px;
 }
 
 .log-details {
@@ -202,10 +194,9 @@
 
 .log-message {
   overflow-wrap: anywhere;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-/* Scoped to the log card so it does not affect other components. */
 .log-card .log-entry {
   display: flex;
   align-items: flex-start;
@@ -271,22 +262,47 @@
   letter-spacing: 0.4px;
 }
 
-.log-footer > span:first-child {
+.log-footer > span {
   display: flex;
   align-items: center;
   gap: 7px;
 }
 
-.log-footer .status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #299d69;
+/* BUFFER */
+
+.buffer-content {
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid #d8e1ec;
+  border-radius: 8px;
+  background: #f6f8fb;
+  overflow: hidden;
 }
 
-/* =========================================
-   RESPONSIVE LAYOUT
-========================================= */
+.buffer-content p {
+  margin: 9px 0;
+  color: #263e62;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.buffer-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #74849a;
+  font-size: 9px;
+}
+
+.buffer-empty {
+  margin-top: 10px;
+  color: #98a4b4;
+  font-size: 10px;
+  text-align: center;
+}
+
+/* RESPONSIVE */
 
 @media (max-width: 1250px) {
   .lifecycle-grid {
@@ -305,6 +321,6 @@
   }
 
   .lifecycle-stage {
-    min-height: 170px;
+    min-height: 165px;
   }
 }

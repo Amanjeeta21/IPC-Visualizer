@@ -2,22 +2,31 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Send } from "lucide-react";
 
-function DataPacket({ message, isActive }) {
+function DataPacket({ message, isActive, direction = "forward" }) {
+  const isReverse = direction === "reverse";
+
   return (
     <AnimatePresence>
       {isActive && (
         <motion.div
-          className="data-packet"
-          initial={{ left: "0%", opacity: 0, scale: 0.8 }}
+          className={`data-packet ${isReverse ? "packet-reverse" : ""}`}
+          initial={{
+            left: isReverse ? "50%" : "8%",
+            opacity: 0,
+            scale: 0.75,
+          }}
           animate={{
-            left: "100%",
+            left: isReverse ? "92%" : "50%",
             opacity: 1,
             scale: 1,
           }}
-          exit={{ opacity: 0, scale: 0.8 }}
+          exit={{
+            opacity: 0,
+            scale: 0.75,
+          }}
           transition={{
-            duration: 1.4,
-            ease: "easeInOut",
+            duration: 1.3,
+            ease: [0.22, 1, 0.36, 1],
           }}
         >
           <Send size={13} />

@@ -3,44 +3,55 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Database } from "lucide-react";
 import DataPacket from "./DataPacket";
 
-function PipeChannel({ isWriting, message, bufferMessage, pipeCreated }) {
+function PipeChannel({
+  isWriting,
+  isReading,
+  message,
+  bufferMessage,
+  pipeCreated,
+}) {
   return (
     <div className="communication">
       <div className="communication-label">
         <span>fd[1]</span>
-        <span>WRITE</span>
+        <span>PARENT → PIPE</span>
       </div>
 
       <div className="pipe-line">
-        <div className="line"></div>
+        <div className={`pipe-track ${pipeCreated ? "pipe-track-active" : ""}`}>
+          <motion.div
+            className="pipe-flow-line"
+            animate={{
+              opacity: pipeCreated ? 1 : 0.35,
+            }}
+          />
+        </div>
 
         <DataPacket
           message={message}
-          isActive={isWriting}
+          isActive={isWriting || isReading}
+          direction={isReading ? "reverse" : "forward"}
         />
 
         <motion.div
           className={`pipe-visual ${bufferMessage ? "buffer-filled" : ""}`}
           animate={{
-            scale: bufferMessage ? [1, 1.04, 1] : 1,
+            scale: bufferMessage ? [1, 1.07, 1] : 1,
           }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.45 }}
         >
           <div className="pipe-inner">
-            <Database size={18} />
-
-            <span>
-              {bufferMessage ? "DATA IN BUFFER" : "PIPE BUFFER"}
-            </span>
+            <Database size={19} />
+            <span>{bufferMessage ? "DATA STORED" : "PIPE BUFFER"}</span>
           </div>
         </motion.div>
 
-        <ArrowRight className="flow-arrow" size={20} />
+        <ArrowRight className="pipe-direction-arrow" size={22} />
       </div>
 
       <div className="communication-label bottom">
-        <span>fd[0]</span>
-        <span>READ</span>
+        <span>BUFFER</span>
+        <span>fd[0] · CHILD</span>
       </div>
 
       <AnimatePresence>
@@ -55,7 +66,7 @@ function PipeChannel({ isWriting, message, bufferMessage, pipeCreated }) {
             <span className="section-kicker">PIPE BUFFER CONTENTS</span>
             <p>{bufferMessage}</p>
             <span className="buffer-indicator">
-              <span className="status-dot"></span>
+              <span className="status-dot" />
               Waiting to be read by child process
             </span>
           </motion.div>
@@ -64,7 +75,7 @@ function PipeChannel({ isWriting, message, bufferMessage, pipeCreated }) {
 
       {!pipeCreated && (
         <div className="buffer-empty">
-          The communication channel has not been created yet.
+          Communication channel not initialized.
         </div>
       )}
     </div>

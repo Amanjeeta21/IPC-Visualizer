@@ -1,11 +1,9 @@
+
 node_modules/
 .env
 .env.*
 !.env.example
 
-*.o
-*.out
-
-ipc/pipe_ipc
-
 npm-debug.log*
+.DS_Store
+Thumbs.db

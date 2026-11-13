@@ -1,122 +1,120 @@
-import { execFile } from "child_process";
-import { promisify } from "util";
-import path from "path";
-import { fileURLToPath } from "url";
 
-const execFileAsync = promisify(execFile);
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const backendDirectory = path.resolve(__dirname, "..");
-
-const executablePath = path.join(
-  backendDirectory,
-  "ipc",
-  "pipe_ipc"
-);
-
-function parseOutput(stdout) {
-  const result = {
-    success: true,
-    rawOutput: stdout,
-    parentPid: null,
-    childPid: null,
-    bytesWritten: 0,
-    bytesRead: 0,
-    message: null,
-    steps: [],
-  };
-
-  const parentPidMatch = stdout.match(/Parent PID:\s*(\d+)/);
-  const childPidMatch = stdout.match(/Child PID:\s*(\d+)/);
-  const bytesWrittenMatch = stdout.match(/Bytes written:\s*(\d+)/);
-  const bytesReadMatch = stdout.match(/Bytes read:\s*(\d+)/);
-  const receivedMessageMatch = stdout.match(
-    /Child received:\s*(.*)/
-  );
-
-  if (parentPidMatch) {
-    result.parentPid = Number(parentPidMatch[1]);
-  }
-
-  if (childPidMatch) {
-    result.childPid = Number(childPidMatch[1]);
-  }
-
-  if (bytesWrittenMatch) {
-    result.bytesWritten = Number(bytesWrittenMatch[1]);
-  }
-
-  if (bytesReadMatch) {
-    result.bytesRead = Number(bytesReadMatch[1]);
-  }
-
-  if (receivedMessageMatch) {
-    result.message = receivedMessageMatch[1].trim();
-  }
-
-  if (stdout.includes("PIPE_CREATED")) {
-    result.steps.push("pipe() created");
-  }
-
-  if (stdout.includes("CHILD_CREATED")) {
-    result.steps.push("fork() created child");
-  }
-
-  if (stdout.includes("WRITE_COMPLETED")) {
-    result.steps.push("write() completed");
-  }
-
-  if (
-    stdout.includes("WRITE_COMPLETED") &&
-    stdout.includes("READ_COMPLETED")
-  ) {
-    result.steps.push("data transferred through pipe");
-  }
-
-  if (stdout.includes("READ_COMPLETED")) {
-    result.steps.push("read() completed");
-  }
-
-  if (stdout.includes("IPC_COMPLETED")) {
-    result.steps.push("IPC communication completed");
-  }
-
-  return result;
-}
+const MAX_MESSAGE_SIZE = 1023;
 
 export async function runPipeIPC(message) {
-  try {
-    const { stdout, stderr } = await execFileAsync(
-      executablePath,
-      [message],
-      {
-        timeout: 10000,
-        maxBuffer: 1024 * 1024,
-      }
-    );
-
-    const result = parseOutput(stdout);
-
-    if (stderr && stderr.trim()) {
-      result.stderr = stderr.trim();
-    }
-
-    return result;
-  } catch (error) {
-    const stderr = error.stderr || "";
-    const stdout = error.stdout || "";
-
-    const executionError = new Error(
-      stderr.trim() ||
-      stdout.trim() ||
-      error.message ||
-      "C IPC program failed."
-    );
-
-    executionError.code = error.code;
-
-    throw executionError;
+  if (typeof message !== "string" || !message.trim()) {
+    throw new Error("A valid message is required.");
   }
+
+  const bytes = Buffer.byteLength(message, "utf8");
+
+  if (bytes > MAX_MESSAGE_SIZE) {
+    throw new Error(
+      `Message exceeds the maximum size of ${MAX_MESSAGE_SIZE} UTF-8 bytes.`
+    );
+  }
+
+  // Simulated process identifiers, not operating-system PIDs.
+  const parentPid = 1024;
+  const childPid = 1025;
+
+  const logs = [];
+  const steps = [];
+
+  let pipeBuffer = "";
+  let receivedMessage = "";
+
+  const addLog = (operation, description, status = "success") => {
+    logs.push({
+      operation,
+      description,
+      status,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  // Stage 1: pipe()
+  const pipe = {
+    readDescriptor: 0,
+    writeDescriptor: 1,
+    active: true,
+  };
+
+  steps.push("pipe() created");
+  addLog(
+    "PIPE",
+    "pipe() created successfully. Read and write descriptors initialized."
+  );
+
+  // Stage 2: fork()
+  const childProcess = {
+    pid: childPid,
+    parentPid,
+    created: true,
+  };
+
+  steps.push("fork() created child");
+  addLog(
+    "FORK",
+    `fork() simulated successfully. Child process ${childPid} created.`
+  );
+
+  // Stage 3: write()
+  pipeBuffer = message;
+
+  const bytesWritten = Buffer.byteLength(pipeBuffer, "utf8");
+
+  steps.push("write() completed");
+  addLog(
+    "WRITE",
+    `Parent process wrote ${bytesWritten} UTF-8 bytes into the pipe.`
+  );
+
+  // Stage 4: Pipe buffer transfer
+  addLog(
+    "BUFFER",
+    "Message is now available inside the simulated pipe buffer."
+  );
+
+  // Stage 5: read()
+  receivedMessage = pipeBuffer;
+
+  const bytesRead = Buffer.byteLength(receivedMessage, "utf8");
+
+  pipeBuffer = "";
+
+  steps.push("read() completed");
+  addLog(
+    "READ",
+    `Child process successfully read ${bytesRead} UTF-8 bytes.`
+  );
+
+  // Stage 6: Completion
+  pipe.active = false;
+
+  steps.push("IPC communication completed");
+  addLog(
+    "DONE",
+    "Simulated parent-child communication completed successfully."
+  );
+
+  return {
+    success: true,
+    simulation: true,
+    message: receivedMessage,
+    parentPid,
+    childPid,
+    bytesWritten,
+    bytesRead,
+    pipe: {
+      created: true,
+      readDescriptor: 0,
+      writeDescriptor: 1,
+      active: false,
+    },
+    childProcess,
+    steps,
+    logs,
+    rawOutput: logs.map((log) => log.description).join("\n"),
+  };
 }
