@@ -1,105 +1,82 @@
 
-import {
-  CheckCircle2,
-  CircleDot,
-  Lock,
-} from "lucide-react";
-
+import StepIndicator from "./StepIndicator";
 import "../styles/ipc.css";
 
 const stages = [
   {
     title: "Create Pipe",
-    syscall: "pipe()",
-    description: "Create read and write descriptors.",
+    operation: "pipe()",
+    description: "Initialize the read and write descriptors.",
   },
   {
     title: "Fork Child",
-    syscall: "fork()",
-    description: "Create a child process.",
+    operation: "fork()",
+    description: "Create a child process with inherited descriptors.",
   },
   {
     title: "Write Data",
-    syscall: "write()",
-    description: "Parent sends the message.",
+    operation: "write()",
+    description: "The parent writes bytes into the pipe.",
   },
   {
-    title: "Transfer",
-    syscall: "PIPE BUFFER",
-    description: "Data waits inside the pipe.",
+    title: "Buffer Data",
+    operation: "PIPE BUFFER",
+    description: "The message waits inside the channel.",
   },
   {
     title: "Read Data",
-    syscall: "read()",
-    description: "Child receives the message.",
+    operation: "read()",
+    description: "The child retrieves data from the pipe.",
   },
   {
     title: "Complete",
-    syscall: "DONE",
-    description: "Communication is complete.",
+    operation: "DONE",
+    description: "The communication cycle is complete.",
   },
 ];
 
 function ProcessLifecycle({ step = 0 }) {
+  const completedCount = Math.max(0, Math.min(step - 1, 5));
+
   return (
     <section className="lifecycle-card">
       <div className="section-heading">
         <div>
-          <span className="section-kicker">
-            PROCESS LIFECYCLE
-          </span>
-
-          <h3>Parent–Child Communication Sequence</h3>
+          <span className="section-kicker">EXECUTION SEQUENCE / 01—06</span>
+          <h3>Process Lifecycle</h3>
         </div>
 
         <span className="lifecycle-count">
-          {step}/6 stages
+          {String(completedCount).padStart(2, "0")} / 06 COMPLETE
         </span>
+      </div>
+
+      <div className="lifecycle-progress">
+        <div
+          className="lifecycle-progress-fill"
+          style={{ width: `${(completedCount / 6) * 100}%` }}
+        />
       </div>
 
       <div className="lifecycle-grid">
         {stages.map((stage, index) => {
           const number = index + 1;
-          const completed = step > number;
-          const current = step === number;
+          const status =
+            step > number
+              ? "completed"
+              : step === number
+                ? "current"
+                : "pending";
 
           return (
-            <article
-              key={stage.title}
-              className={`lifecycle-stage ${
-                completed ? "completed" : ""
-              } ${current ? "current" : ""}`}
-            >
-              <div className="lifecycle-stage-top">
-                <div className="lifecycle-icon">
-                  {completed ? (
-                    <CheckCircle2 size={17} />
-                  ) : current ? (
-                    <CircleDot size={17} />
-                  ) : (
-                    <Lock size={15} />
-                  )}
-                </div>
-
-                <span>
-                  {String(number).padStart(2, "0")}
-                </span>
-              </div>
-
-              <strong>{stage.title}</strong>
-
-              <code>{stage.syscall}</code>
-
-              <p>{stage.description}</p>
-
-              <span className="lifecycle-status">
-                {completed
-                  ? "COMPLETED"
-                  : current
-                  ? "IN PROGRESS"
-                  : "PENDING"}
-              </span>
-            </article>
+            <StepIndicator
+              key={stage.operation}
+              number={number}
+              title={stage.title}
+              operation={stage.operation}
+              description={stage.description}
+              status={status}
+            />
           );
         })}
       </div>

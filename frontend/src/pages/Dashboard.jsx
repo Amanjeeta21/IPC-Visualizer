@@ -1,24 +1,15 @@
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Activity,
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
-  Cpu,
-  GitBranch,
-  RotateCcw,
-  Send,
-  Terminal,
-  Users,
-  Workflow,
-} from "lucide-react";
+import { Activity, ArrowRight, Cpu, Database, GitBranch } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
 
+import Header from "../components/Header";
+import ProcessCard from "../components/ProcessCard";
+import ControlPanel from "../components/ControlPanel";
 import PipeChannel from "../components/PipeChannel";
 import ExecutionLog from "../components/ExecutionLog";
 import ProcessLifecycle from "../components/ProcessLifecycle";
+
 import { runPipeIPC } from "../services/ipcService";
 
 const getTime = () =>
@@ -81,36 +72,16 @@ function Dashboard() {
     };
   }, []);
 
-  const addLog = (operation, message, type = "info") => {
+  const addLog = (operation, logMessage, type = "info") => {
     setLogs((previous) => [
       ...previous,
       {
         operation,
-        message,
+        message: logMessage,
         type,
         time: getTime(),
       },
     ]);
-  };
-
-  const appendBackendLogs = (backendLogs = []) => {
-    const normalizedLogs = backendLogs.map((log) => ({
-      operation: log.operation || "BACKEND",
-      message: log.description || log.message || "Backend event",
-      type:
-        log.status === "error"
-          ? "error"
-          : log.status === "success"
-            ? "success"
-            : "info",
-      time: log.timestamp
-        ? new Date(log.timestamp).toLocaleTimeString("en-IN", {
-            hour12: false,
-          })
-        : getTime(),
-    }));
-
-    setLogs((previous) => [...previous, ...normalizedLogs]);
   };
 
   const createPipe = () => {
@@ -133,8 +104,7 @@ function Dashboard() {
 
     setPipeCreated(true);
     setStep(1);
-
-    setLogs(createInitialLogs("Creating a new communication channel"));
+    setLogs(createInitialLogs("Initializing a new communication channel"));
 
     addLog("PIPE", "pipe() invoked by parent process");
 
@@ -161,7 +131,6 @@ function Dashboard() {
   };
 
   const writeToPipe = async () => {
-    // A ref prevents two rapid clicks before React updates the UI.
     if (requestLockRef.current) return;
 
     if (
@@ -188,37 +157,32 @@ function Dashboard() {
     setIsPacketMoving(false);
     setStep(3);
 
-    addLog("WRITE", "Sending message to the backend simulation");
+    addLog("WRITE", "Sending payload to the IPC simulation backend");
 
     try {
       const result = await runPipeIPC(message);
 
       if (cycleRef.current !== currentCycle) return;
 
+      if (!result?.success || typeof result.message !== "string") {
+        throw new Error("The backend returned an invalid IPC response.");
+      }
+
       setBackendResult(result);
       setIsRequesting(false);
 
-      if (!result.message && result.message !== "") {
-        throw new Error("The backend returned an invalid message.");
-      }
-
-      if (!result.success) {
-        throw new Error("Backend IPC simulation was unsuccessful.");
-      }
-
       addLog(
         "BACKEND",
-        `Backend confirmed simulated child PID ${result.childPid}`,
+        `Simulation backend acknowledged child PID ${result.childPid}`,
         "success"
       );
 
       addLog(
         "WRITE",
-        `${result.bytesWritten} UTF-8 bytes written successfully`,
+        `${result.bytesWritten} UTF-8 bytes written to the pipe`,
         "success"
       );
 
-      // Show the packet moving from parent to the pipe buffer.
       setIsPacketMoving(true);
 
       schedule(() => {
@@ -231,11 +195,9 @@ function Dashboard() {
 
         addLog(
           "BUFFER",
-          "Message is now waiting inside the pipe buffer",
+          `Payload stored in pipe buffer (${result.bytesWritten} bytes)`,
           "success"
         );
-
-        appendBackendLogs(result.logs || []);
       }, 1450);
     } catch (error) {
       if (cycleRef.current !== currentCycle) return;
@@ -270,7 +232,7 @@ function Dashboard() {
     setIsReading(true);
     setStep(5);
 
-    addLog("READ", "Child process invokes read()");
+    addLog("READ", "Child process invokes read() on fd[0]");
 
     schedule(() => {
       if (cycleRef.current !== currentCycle) return;
@@ -316,21 +278,21 @@ function Dashboard() {
   };
 
   const parentStatus = isRequesting
-    ? "Requesting backend..."
+    ? "Sending request..."
     : isPacketMoving
       ? "Transferring data..."
       : bufferMessage || receivedMessage
-        ? "Data sent"
+        ? "Payload sent"
         : pipeCreated
           ? "Ready"
           : "Idle";
 
   const childStatus = isReading
-    ? "Reading data..."
+    ? "Reading from pipe..."
     : receivedMessage
-      ? "Data received"
+      ? "Message received"
       : bufferMessage
-        ? "Waiting to read"
+        ? "Waiting for data"
         : childCreated
           ? "Ready"
           : "Not created";
@@ -338,44 +300,20 @@ function Dashboard() {
   return (
     <div className="app-shell">
       <main className="main-content">
-        <header className="topbar">
-          <div className="topbar-brand">
-            <div className="brand-mark">
-              <GitBranch size={21} />
-            </div>
-            <span>IPC / VISUALIZER</span>
-          </div>
-
-          <div className="topbar-actions">
-            <div className="live-indicator">
-              <span />
-              SIMULATION READY
-            </div>
-
-            <Link className="documentation-link" to="/documentation">
-              <BookOpen size={15} />
-              Documentation
-            </Link>
-
-            <button className="reset-button" onClick={resetSimulation}>
-              <RotateCcw size={15} />
-              Reset
-            </button>
-          </div>
-        </header>
+        <Header onReset={resetSimulation} step={step} />
 
         <section className="content">
           <div className="dashboard-heading">
             <span className="heading-overline">
               <Activity size={14} />
-              INTER-PROCESS COMMUNICATION
+              INTER-PROCESS COMMUNICATION / SIMULATION
             </span>
 
             <h1>Pipe IPC Simulator</h1>
 
             <p>
-              Explore how a parent process communicates with a child process
-              through an unnamed pipe.
+              Trace how data moves between parent and child processes through
+              an unnamed pipe.
             </p>
 
             <div className="heading-tags">
@@ -391,35 +329,31 @@ function Dashboard() {
 
           <div className="stats-card">
             <div className="stat">
-              <span>PARENT PROCESS</span>
+              <span>PROCESS A / PARENT</span>
               <strong>PID {backendResult?.parentPid ?? 1024}</strong>
-              <small>Process A</small>
+              <small>{pipeCreated ? "Initialized" : "Waiting for execution"}</small>
             </div>
 
             <div className="stat">
-              <span>CHILD PROCESS</span>
+              <span>PROCESS B / CHILD</span>
               <strong>
-                {childCreated
-                  ? `PID ${backendResult?.childPid ?? 1025}`
-                  : "NOT CREATED"}
+                {childCreated ? `PID ${backendResult?.childPid ?? 1025}` : "NOT CREATED"}
               </strong>
-              <small>Process B</small>
+              <small>{childCreated ? "Fork completed" : "Waiting for fork()"}</small>
             </div>
 
             <div className="stat">
-              <span>PIPE STATUS</span>
+              <span>PIPE CHANNEL</span>
               <strong className={pipeCreated ? "green" : ""}>
                 {pipeCreated ? "ACTIVE" : "INACTIVE"}
               </strong>
-              <small>
-                {pipeCreated ? "fd[0] / fd[1]" : "Waiting for pipe()"}
-              </small>
+              <small>{pipeCreated ? "fd[0] / fd[1]" : "No descriptors"}</small>
             </div>
 
             <div className="stat">
-              <span>DATA TRANSFER</span>
-              <strong>{backendResult ? `${backendResult.bytesWritten} B` : "—"}</strong>
-              <small>UTF-8 payload</small>
+              <span>PAYLOAD SIZE</span>
+              <strong>{backendResult ? `${backendResult.bytesWritten} B` : `${byteCount} B`}</strong>
+              <small>UTF-8 encoded message</small>
             </div>
           </div>
 
@@ -428,7 +362,7 @@ function Dashboard() {
           <section className="visualization-card">
             <div className="section-heading">
               <div>
-                <span className="section-kicker">LIVE PROCESS TOPOLOGY</span>
+                <span className="section-kicker">LIVE PROCESS TOPOLOGY / 01</span>
                 <h2>Communication Flow</h2>
               </div>
 
@@ -439,29 +373,13 @@ function Dashboard() {
             </div>
 
             <div className="process-flow">
-              <motion.div
-                className={`process-card parent ${isWriting ? "process-active" : ""}`}
-                animate={{ y: isWriting ? -3 : 0 }}
-              >
-                <div className="process-header">
-                  <div className="process-icon">
-                    <Cpu size={23} />
-                  </div>
-                  <span className="process-type">PROCESS A</span>
-                </div>
-
-                <h3>Parent Process</h3>
-
-                <div className="pid">
-                  <span>PROCESS ID</span>
-                  <strong>{backendResult?.parentPid ?? 1024}</strong>
-                </div>
-
-                <div className="process-status">
-                  <span className="status-dot" />
-                  {parentStatus}
-                </div>
-              </motion.div>
+              <ProcessCard
+                type="parent"
+                pid={backendResult?.parentPid ?? 1024}
+                status={parentStatus}
+                active={isWriting}
+                created
+              />
 
               <PipeChannel
                 isWriting={isPacketMoving}
@@ -471,35 +389,13 @@ function Dashboard() {
                 pipeCreated={pipeCreated}
               />
 
-              <motion.div
-                className={`process-card child ${
-                  childCreated ? "child-created" : "child-pending"
-                } ${isReading ? "process-active" : ""}`}
-                animate={{ y: isReading ? -3 : 0 }}
-              >
-                <div className="process-header">
-                  <div className="process-icon">
-                    <Users size={23} />
-                  </div>
-                  <span className="process-type">PROCESS B</span>
-                </div>
-
-                <h3>Child Process</h3>
-
-                <div className="pid">
-                  <span>PROCESS ID</span>
-                  <strong>
-                    {childCreated
-                      ? backendResult?.childPid ?? 1025
-                      : "—"}
-                  </strong>
-                </div>
-
-                <div className="process-status">
-                  <span className="status-dot" />
-                  {childStatus}
-                </div>
-              </motion.div>
+              <ProcessCard
+                type="child"
+                pid={backendResult?.childPid ?? 1025}
+                status={childStatus}
+                active={isReading}
+                created={childCreated}
+              />
             </div>
 
             <AnimatePresence>
@@ -511,125 +407,38 @@ function Dashboard() {
                   exit={{ opacity: 0, y: 12 }}
                 >
                   <div className="received-icon">
-                    <CheckCircle2 size={21} />
+                    <Database size={19} />
                   </div>
 
                   <div>
-                    <span>MESSAGE RECEIVED BY CHILD PROCESS</span>
+                    <span>CHILD PROCESS / MESSAGE RECEIVED</span>
                     <strong>{receivedMessage}</strong>
                   </div>
+
+                  <span className="received-bytes">
+                    {backendResult?.bytesRead ?? 0} BYTES
+                  </span>
                 </motion.div>
               )}
             </AnimatePresence>
           </section>
 
           <div className="control-grid">
-            <section className="control-card">
-              <div className="card-title">
-                <div>
-                  <span className="section-kicker">INPUT / OUTPUT</span>
-                  <h2>Message Payload</h2>
-                </div>
-
-                <span className="byte-count">{byteCount} BYTES</span>
-              </div>
-
-              <div className="input-wrapper">
-                <textarea
-                  value={message}
-                  onChange={(event) => setMessage(event.target.value)}
-                  disabled={
-                    isWriting ||
-                    isReading ||
-                    !!bufferMessage ||
-                    !!receivedMessage
-                  }
-                  placeholder="Enter a message to send..."
-                  maxLength={120}
-                />
-
-                <div className="input-footer">
-                  <span>{message.length}/120 CHARACTERS</span>
-                  <span>UTF-8 ENCODING</span>
-                </div>
-              </div>
-
-              <div className="control-buttons">
-                <button
-                  className="primary-button"
-                  onClick={createPipe}
-                  disabled={pipeCreated && step !== 6}
-                >
-                  <GitBranch size={16} />
-                  {step === 6
-                    ? "Recreate Pipe"
-                    : pipeCreated
-                      ? "Pipe Created"
-                      : "Create Pipe"}
-                </button>
-
-                <button
-                  className="secondary-button"
-                  onClick={forkChild}
-                  disabled={!pipeCreated || childCreated || step !== 1}
-                >
-                  <Users size={16} />
-                  Fork
-                </button>
-
-                <button
-                  className="secondary-button"
-                  onClick={writeToPipe}
-                  disabled={
-                    !pipeCreated ||
-                    !childCreated ||
-                    isWriting ||
-                    isReading ||
-                    !!bufferMessage ||
-                    !!receivedMessage ||
-                    !message.trim() ||
-                    step !== 2
-                  }
-                >
-                  <Send size={16} />
-                  {isRequesting
-                    ? "Connecting..."
-                    : isPacketMoving
-                      ? "Transferring..."
-                      : "Write"}
-                </button>
-
-                <button
-                  className="secondary-button"
-                  onClick={readFromPipe}
-                  disabled={
-                    !childCreated ||
-                    !bufferMessage ||
-                    !backendResult ||
-                    isReading ||
-                    !!receivedMessage ||
-                    step !== 4
-                  }
-                >
-                  <Terminal size={16} />
-                  {isReading ? "Reading..." : "Read"}
-                </button>
-              </div>
-
-              <div className="control-hint">
-                {!pipeCreated
-                  ? "Start by creating a communication pipe."
-                  : !childCreated
-                    ? "Create the child process using fork()."
-                    : step === 2
-                      ? "The channel is ready. Write your message."
-                      : step === 4
-                        ? "Data is waiting in the buffer. Read it from the child process."
-                        : step === 6
-                          ? "Communication completed. Recreate the pipe to run again."
-                          : "Simulation in progress..."}
-              </div>
-            </section>
+            <ControlPanel
+              message={message}
+              onMessageChange={setMessage}
+              byteCount={byteCount}
+              pipeCreated={pipeCreated}
+              childCreated={childCreated}
+              step={step}
+              isWriting={isWriting}
+              isReading={isReading}
+              isRequesting={isRequesting}
+              onCreatePipe={createPipe}
+              onForkChild={forkChild}
+              onWrite={writeToPipe}
+              onRead={readFromPipe}
+            />
 
             <ExecutionLog logs={logs} />
           </div>

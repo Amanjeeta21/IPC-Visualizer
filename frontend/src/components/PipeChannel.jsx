@@ -1,6 +1,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Database } from "lucide-react";
+import { ArrowRight, Database, Radio } from "lucide-react";
 import DataPacket from "./DataPacket";
 
 function PipeChannel({
@@ -10,10 +10,12 @@ function PipeChannel({
   bufferMessage,
   pipeCreated,
 }) {
+  const bufferFilled = Boolean(bufferMessage);
+
   return (
-    <div className="communication">
+    <div className={`communication ${pipeCreated ? "channel-ready" : ""}`}>
       <div className="communication-label">
-        <span>fd[1]</span>
+        <span>fd[1] / WRITE</span>
         <span>PARENT → PIPE</span>
       </div>
 
@@ -22,10 +24,15 @@ function PipeChannel({
           <motion.div
             className="pipe-flow-line"
             animate={{
-              opacity: pipeCreated ? 1 : 0.35,
+              opacity: pipeCreated ? 1 : 0.3,
+              scaleX: isWriting || isReading ? [0.35, 1] : 1,
             }}
+            transition={{ duration: 0.7 }}
           />
         </div>
+
+        <div className="pipe-connector left" />
+        <div className="pipe-connector right" />
 
         <DataPacket
           message={message}
@@ -34,28 +41,36 @@ function PipeChannel({
         />
 
         <motion.div
-          className={`pipe-visual ${bufferMessage ? "buffer-filled" : ""}`}
+          className={`pipe-visual ${bufferFilled ? "buffer-filled" : ""}`}
           animate={{
-            scale: bufferMessage ? [1, 1.07, 1] : 1,
+            scale: bufferFilled ? [1, 1.045, 1] : 1,
           }}
           transition={{ duration: 0.45 }}
         >
           <div className="pipe-inner">
-            <Database size={19} />
-            <span>{bufferMessage ? "DATA STORED" : "PIPE BUFFER"}</span>
+            <Database size={18} />
+            <span>{bufferFilled ? "DATA STORED" : "PIPE BUFFER"}</span>
+          </div>
+
+          <div className="buffer-fill-track">
+            <motion.div
+              className="buffer-fill-level"
+              animate={{ width: bufferFilled ? "100%" : "0%" }}
+              transition={{ duration: 0.65 }}
+            />
           </div>
         </motion.div>
 
-        <ArrowRight className="pipe-direction-arrow" size={22} />
+        <ArrowRight className="pipe-direction-arrow" size={20} />
       </div>
 
       <div className="communication-label bottom">
-        <span>BUFFER</span>
-        <span>fd[0] · CHILD</span>
+        <span>BUFFER / MEMORY</span>
+        <span>READ / fd[0] → CHILD</span>
       </div>
 
       <AnimatePresence>
-        {bufferMessage && (
+        {bufferFilled && (
           <motion.div
             className="buffer-content"
             initial={{ opacity: 0, height: 0, y: 8 }}
@@ -63,11 +78,18 @@ function PipeChannel({
             exit={{ opacity: 0, height: 0, y: 8 }}
             transition={{ duration: 0.3 }}
           >
-            <span className="section-kicker">PIPE BUFFER CONTENTS</span>
+            <div className="buffer-content-heading">
+              <span className="section-kicker">PIPE BUFFER CONTENTS</span>
+              <span className="buffer-byte-label">
+                {new TextEncoder().encode(bufferMessage).length} BYTES
+              </span>
+            </div>
+
             <p>{bufferMessage}</p>
+
             <span className="buffer-indicator">
               <span className="status-dot" />
-              Waiting to be read by child process
+              Waiting for read() by child process
             </span>
           </motion.div>
         )}
@@ -75,7 +97,8 @@ function PipeChannel({
 
       {!pipeCreated && (
         <div className="buffer-empty">
-          Communication channel not initialized.
+          <Radio size={13} />
+          Communication channel not initialized
         </div>
       )}
     </div>
